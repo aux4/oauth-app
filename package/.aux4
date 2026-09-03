@@ -1,7 +1,7 @@
 {
   "scope": "aux4",
   "name": "oauth-app",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Deploy one OAuth service for multiple providers (Google + X) in one click — it holds your client credentials so your CLI tools never have to.",
   "license": "MIT",
   "tags": [
