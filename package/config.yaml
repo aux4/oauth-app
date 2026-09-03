@@ -1,0 +1,17 @@
+# aux4/api route map for the combined (multi-provider) OAuth app.
+#
+# One machine serves every provider: the {provider} path segment (google | x) is
+# dispatched by the oauth-app commands to the matching per-provider app
+# (aux4/oauth-app-google, aux4/oauth-app-x), which are installed as dependencies.
+# The api runtime passes the request context as flags (--params/--query/--body).
+# Routes are served under the /api prefix (e.g. GET <machine-url>/api/health).
+config:
+  api:
+    "GET /health":
+      command: aux4 oauth-app health
+    "GET /{provider}/authorize-url":
+      command: aux4 oauth-app authorize-url
+    "POST /{provider}/exchange":
+      command: aux4 oauth-app exchange
+    "POST /{provider}/refresh":
+      command: aux4 oauth-app refresh

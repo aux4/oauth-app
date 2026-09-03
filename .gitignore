@@ -1,0 +1,4 @@
+package/*.zip
+package/lib/.local.db
+node_modules/
+.DS_Store

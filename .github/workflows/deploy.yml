@@ -1,0 +1,47 @@
+name: Deploy to aux4.cloud
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'oauth-app-google version to deploy'
+        required: false
+        default: 'latest'
+      size:
+        description: 'Machine size'
+        required: false
+        default: 'sm'
+        type: choice
+        options:
+          - xs
+          - sm
+          - md
+          - lg
+          - xl
+
+concurrency:
+  group: deploy-oauth-broker
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aux4/action@v1
+        with:
+          command: cloud-deploy
+          scope: aux4
+          # aux4's own shared instance keeps its legacy machine name (and URL,
+          # https://aux4.on.aux4.cloud/oauth-broker) so google-auth's default
+          # broker is unchanged; only the package it runs changes to oauth-app-google.
+          machine: oauth-broker
+          api: 'true'
+          size: ${{ inputs.size || 'sm' }}
+          deploy_packages: |
+            aux4/oauth-app-google@${{ inputs.version || 'latest' }}
+          # Auth: the dedicated CI principal 'aux4-cloud-deployer' — a
+          # client_credentials client granted membership in the aux4 scope, so
+          # the cloud API (which authorizes deploys by scope membership)
+          # accepts its token. The action mints it via scope=cloud:deploy.
+          client_id: ${{ secrets.AUX4_CLOUD_DEPLOYER_CLIENT_ID }}
+          client_secret: ${{ secrets.AUX4_CLOUD_DEPLOYER_CLIENT_SECRET }}
