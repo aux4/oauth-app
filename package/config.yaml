@@ -6,12 +6,31 @@
 # provider commands under the shared `oauth-app` profile. When several plugins are
 # deployed to one machine, the cloud merges every package's config.api.
 config:
+  # Endpoint auth for the whole VM. SECURE BY DEFAULT: every route that is not
+  # explicitly `public: true` requires a valid aux4 idToken (Authorization:
+  # Bearer <token>) whose owner is entitled to this machine's scope. The check is
+  # run by `aux4 oauth-app auth-validate`. One VM = one policy; a different policy
+  # = a different VM.
+  #
+  # `disableWhenEnv: OAUTH_APP_PUBLIC` is the deploy-time kill switch: when the
+  # machine env has OAUTH_APP_PUBLIC=true, aux4/api turns auth OFF wholesale (the
+  # validate command never runs) and the broker serves everyone. This is the
+  # PRIMARY public/secure toggle. (auth-validate also still recognises the same
+  # env as a defensive fallback, so an older api without disableWhenEnv support
+  # stays public rather than failing closed.)
+  security:
+    auth:
+      type: bearer
+      command: aux4 oauth-app auth-validate
+      disableWhenEnv: OAUTH_APP_PUBLIC
   api:
+    # Liveness must never require auth.
     "GET /health":
       command: aux4 oauth-app health
+      public: true
     # Poll endpoint (shared, provider-agnostic): the CLI polls this with its
-    # session id until the code is ready. Each provider PLUGIN owns its own
-    # /{provider}/callback route (pointing at the shared `oauth-app callback`
-    # handler), keeping the URI structure with the plugin.
+    # session id until the code is ready. Gated by default. Each provider PLUGIN
+    # owns its own /{provider}/callback route (pointing at the shared `oauth-app
+    # callback` handler), keeping the URI structure with the plugin.
     "GET /session/{id}":
       command: aux4 oauth-app poll

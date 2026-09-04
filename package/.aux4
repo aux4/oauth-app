@@ -67,6 +67,58 @@
           }
         },
         {
+          "name": "auth-validate",
+          "private": true,
+          "execute": [
+            "node ${packageDir}/lib/auth-validate.mjs values(headers, oauthAppPublic, oauthAppAuth, ssoUrl, cloudVmUrl, oauthAppScope)"
+          ],
+          "help": {
+            "text": "Endpoint auth gate for the api (security.auth.command). SECURE BY DEFAULT; set OAUTH_APP_PUBLIC=true (or OAUTH_APP_AUTH=public) to allow all. When secure, validates the Bearer aux4 idToken via SSO /userinfo and requires the caller to be entitled to this machine's scope.",
+            "variables": [
+              {
+                "name": "headers",
+                "text": "Request headers JSON (passed by the api runtime)",
+                "default": "{}"
+              },
+              {
+                "name": "cookies",
+                "text": "Request cookies JSON (passed by the api runtime; unused)",
+                "default": "{}"
+              },
+              {
+                "name": "oauthAppPublic",
+                "text": "When 'true', run the broker fully public (no token required)",
+                "env": "OAUTH_APP_PUBLIC",
+                "default": ""
+              },
+              {
+                "name": "oauthAppAuth",
+                "text": "Alternate public toggle: set to 'public' to disable auth",
+                "env": "OAUTH_APP_AUTH",
+                "default": ""
+              },
+              {
+                "name": "ssoUrl",
+                "text": "aux4 SSO base URL used to validate the idToken via <ssoUrl>/userinfo (defaults to https://sso.aux4.io)",
+                "env": "AUX4_SSO_URL",
+                "default": ""
+              },
+              {
+                "name": "cloudVmUrl",
+                "text": "The machine's own public base URL, injected by aux4.cloud (AUX4_CLOUD_VM_URL); the machine scope is its first host label",
+                "env": "AUX4_CLOUD_VM_URL",
+                "default": ""
+              },
+              {
+                "name": "oauthAppScope",
+                "text": "Explicit machine scope, used when AUX4_CLOUD_VM_URL is not available",
+                "env": "OAUTH_APP_SCOPE",
+                "default": ""
+              }
+            ]
+          }
+        },
+        {
           "name": "callback",
           "execute": [
             "set:sessionId=${query.state}",
