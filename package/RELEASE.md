@@ -1,12 +1,14 @@
-# aux4/oauth-app 0.0.4
+# aux4/oauth-app 0.0.5
 
-## Added
+## Fixed
 
-- **Hosted-callback + poll login** (device-friendly, no loopback):
-  - `GET /session/{id}` — the CLI polls this until the parked authorization code is ready (returns `{status: pending|ready|error|expired}` + the code).
-  - `callback` handler — parks the code from the provider redirect, keyed by the session state, and syncs it to shared storage via `cloud-file-sync` (best-effort) so it survives across instances/redeploys. Provider **plugins** own the per-provider route (`/{provider}/callback`) that points at this handler.
+- Pin `aux4/oauth@0.1.5` so a deployed machine is guaranteed the `session park`/`poll`
+  commands the `/callback` + `/session/{id}` routes depend on. Without the pin, a
+  build could resolve an older cached `aux4/oauth` and the poll endpoint would 500.
 
-## Notes
+## (0.0.4) Added
 
-- Pairs with `aux4/oauth-app-google` / `aux4/oauth-app-x`, whose `authorize-url`/`exchange` set the redirect to `<base>/api/{provider}/callback`.
-- The broker stores only short-lived **codes**, never tokens; tokens stay on the client. The parked code is useless without the client's PKCE verifier.
+- **Hosted-callback + poll login**: `GET /session/{id}` (poll) and a `callback`
+  handler that parks the provider's authorization code (never a token) keyed by the
+  session state. Provider plugins own `/{provider}/callback`. Broker stores only
+  short-lived codes; tokens stay on the client.
