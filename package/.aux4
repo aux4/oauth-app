@@ -65,6 +65,81 @@
               }
             ]
           }
+        },
+        {
+          "name": "callback",
+          "execute": [
+            "set:sessionId=${query.state}",
+            "set:code=${query.code}",
+            "set:error=${query.error}",
+            "if(sessionId==) && echo 'Missing state parameter' 1>&2 && exit 1 || if(sessionId!=) && true",
+            "aux4 oauth session park --id value(sessionId) param(code) param(error) --dir ${stateDir}/oauth-sessions",
+            "aux4 cloud-file-sync push >/dev/null 2>&1 || true",
+            "echo 'Authorization complete. You can close this window and return to your terminal.'"
+          ],
+          "help": {
+            "text": "OAuth redirect landing point (shared by every provider). Parks the returned code for the polling CLI, keyed by the session state. Register <machine-url>/api/callback as the redirect URI on each provider app.",
+            "variables": [
+              {
+                "name": "params",
+                "text": "Path params (from the api runtime)",
+                "default": "{}"
+              },
+              {
+                "name": "query",
+                "text": "Query params — code, state, error (from the provider redirect)",
+                "default": "{}"
+              },
+              {
+                "name": "body",
+                "text": "Request body (unused here)",
+                "default": "{}"
+              },
+              {
+                "name": "stateDir",
+                "text": "Base dir the cloud-file-sync keeps in S3; the session store lives under <stateDir>/oauth-sessions",
+                "env": "CLOUD_STATE_DIR",
+                "default": "/tmp/state"
+              }
+            ]
+          }
+        },
+        {
+          "name": "poll",
+          "execute": [
+            "set:sessionId=${params.id}",
+            "if(sessionId==) && echo '{\"status\":\"invalid\"}' && exit 0 || if(sessionId!=) && true",
+            "aux4 cloud-file-sync pull >/dev/null 2>&1 || true",
+            "set:result=!aux4 oauth session poll --id value(sessionId) --dir ${stateDir}/oauth-sessions",
+            "aux4 cloud-file-sync push >/dev/null 2>&1 || true",
+            "echo value(result)"
+          ],
+          "help": {
+            "text": "Poll a pending login session. Returns {status: pending|ready|error|expired} and the code when ready (single-use). The CLI polls this until it gets the code, then calls the provider's exchange route.",
+            "variables": [
+              {
+                "name": "params",
+                "text": "Path params — id (the session id)",
+                "default": "{}"
+              },
+              {
+                "name": "query",
+                "text": "Query params (unused here)",
+                "default": "{}"
+              },
+              {
+                "name": "body",
+                "text": "Request body (unused here)",
+                "default": "{}"
+              },
+              {
+                "name": "stateDir",
+                "text": "Base dir the cloud-file-sync keeps in S3; the session store lives under <stateDir>/oauth-sessions",
+                "env": "CLOUD_STATE_DIR",
+                "default": "/tmp/state"
+              }
+            ]
+          }
         }
       ]
     }

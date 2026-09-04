@@ -9,3 +9,9 @@ config:
   api:
     "GET /health":
       command: aux4 oauth-app health
+    # Poll endpoint (shared, provider-agnostic): the CLI polls this with its
+    # session id until the code is ready. Each provider PLUGIN owns its own
+    # /{provider}/callback route (pointing at the shared `oauth-app callback`
+    # handler), keeping the URI structure with the plugin.
+    "GET /session/{id}":
+      command: aux4 oauth-app poll
