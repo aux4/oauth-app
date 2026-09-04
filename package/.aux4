@@ -74,7 +74,6 @@
             "set:error=${query.error}",
             "if(sessionId==) && echo 'Missing state parameter' 1>&2 && exit 1 || if(sessionId!=) && true",
             "aux4 oauth session park --id value(sessionId) param(code) param(error) --dir ${stateDir}/oauth-sessions",
-            "aux4 cloud-file-sync push >/dev/null 2>&1 || true",
             "echo 'Authorization complete. You can close this window and return to your terminal.'"
           ],
           "help": {
@@ -109,10 +108,7 @@
           "execute": [
             "set:sessionId=${params.id}",
             "if(sessionId==) && echo '{\"status\":\"invalid\"}' && exit 0 || if(sessionId!=) && true",
-            "aux4 cloud-file-sync pull >/dev/null 2>&1 || true",
-            "set:result=!aux4 oauth session poll --id value(sessionId) --dir ${stateDir}/oauth-sessions",
-            "aux4 cloud-file-sync push >/dev/null 2>&1 || true",
-            "echo value(result)"
+            "aux4 oauth session poll --id value(sessionId) --dir ${stateDir}/oauth-sessions"
           ],
           "help": {
             "text": "Poll a pending login session. Returns {status: pending|ready|error|expired} and the code when ready (single-use). The CLI polls this until it gets the code, then calls the provider's exchange route.",
