@@ -1,6 +1,6 @@
 # aux4/oauth-app
 
-Deploy one OAuth service for multiple providers (Google + X) in one click — it holds your client credentials so your CLI tools never have to.
+Core host for deployable OAuth provider plugins (aux4/oauth-app-google, aux4/oauth-app-x). Install a plugin on top; each depends on this core and brings its own provider + routes.
 
 - [aux4 hub](https://hub.aux4.io/r/public/packages/aux4/oauth-app)
 - [README.md](./package/README.md)

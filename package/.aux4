@@ -2,19 +2,17 @@
   "scope": "aux4",
   "name": "oauth-app",
   "version": "0.0.2",
-  "description": "Deploy one OAuth service for multiple providers (Google + X) in one click — it holds your client credentials so your CLI tools never have to.",
+  "description": "Core host for deployable OAuth provider plugins (aux4/oauth-app-google, aux4/oauth-app-x). Provides the shared api/oauth machinery and health; each plugin brings its own routes and provider logic.",
   "license": "MIT",
   "tags": [
     "oauth",
-    "google",
-    "x",
     "auth",
-    "cloud"
+    "cloud",
+    "core"
   ],
   "dependencies": [
     "aux4/api",
-    "aux4/oauth-app-google",
-    "aux4/oauth-app-x",
+    "aux4/oauth",
     "aux4/config"
   ],
   "system": [
@@ -34,7 +32,7 @@
             "profile:oauth-app"
           ],
           "help": {
-            "text": "Multi-provider OAuth app commands"
+            "text": "OAuth app core — hosts provider plugins (install e.g. aux4/oauth-app-google)"
           }
         }
       ]
@@ -63,93 +61,6 @@
               {
                 "name": "body",
                 "text": "Request body (from the api runtime)",
-                "default": "{}"
-              }
-            ]
-          }
-        },
-        {
-          "name": "authorize-url",
-          "execute": [
-            "set:provider=${params.provider}",
-            "if(provider==) && echo \"Error: provider is required\" 1>&2 && exit 1 || true",
-            "if(provider!=google) && if(provider!=x) && echo \"Error: provider value(provider) is not supported\" 1>&2 && exit 1 || true",
-            "aux4 oauth-app-${provider} authorize-url param(params) param(query) param(body)"
-          ],
-          "help": {
-            "text": "Build the provider authorization URL — dispatches to the per-provider app by {provider}",
-            "variables": [
-              {
-                "name": "params",
-                "text": "Path params — {provider} (google or x)",
-                "default": "{}"
-              },
-              {
-                "name": "query",
-                "text": "Query — redirectUri, scopes, state",
-                "default": "{}"
-              },
-              {
-                "name": "body",
-                "text": "Request body (unused here)",
-                "default": "{}"
-              }
-            ]
-          }
-        },
-        {
-          "name": "exchange",
-          "execute": [
-            "set:provider=${params.provider}",
-            "if(provider==) && echo \"Error: provider is required\" 1>&2 && exit 1 || true",
-            "if(provider!=google) && if(provider!=x) && echo \"Error: provider value(provider) is not supported\" 1>&2 && exit 1 || true",
-            "aux4 oauth-app-${provider} exchange param(params) param(query) param(body)"
-          ],
-          "help": {
-            "text": "Exchange an authorization code for tokens — dispatches to the per-provider app by {provider}",
-            "variables": [
-              {
-                "name": "params",
-                "text": "Path params — {provider} (google or x)",
-                "default": "{}"
-              },
-              {
-                "name": "query",
-                "text": "Query params (unused here)",
-                "default": "{}"
-              },
-              {
-                "name": "body",
-                "text": "Request body — code, codeVerifier, redirectUri",
-                "default": "{}"
-              }
-            ]
-          }
-        },
-        {
-          "name": "refresh",
-          "execute": [
-            "set:provider=${params.provider}",
-            "if(provider==) && echo \"Error: provider is required\" 1>&2 && exit 1 || true",
-            "if(provider!=google) && if(provider!=x) && echo \"Error: provider value(provider) is not supported\" 1>&2 && exit 1 || true",
-            "aux4 oauth-app-${provider} refresh param(params) param(query) param(body)"
-          ],
-          "help": {
-            "text": "Renew an access token from a refresh token — dispatches to the per-provider app by {provider}",
-            "variables": [
-              {
-                "name": "params",
-                "text": "Path params — {provider} (google or x)",
-                "default": "{}"
-              },
-              {
-                "name": "query",
-                "text": "Query params (unused here)",
-                "default": "{}"
-              },
-              {
-                "name": "body",
-                "text": "Request body — refreshToken",
                 "default": "{}"
               }
             ]

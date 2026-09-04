@@ -1,6 +1,7 @@
-# aux4/oauth-app 0.0.1
+# aux4/oauth-app
 
-Initial release: a combined, multi-provider OAuth service. One deployed machine
-serves Google and X — the `{provider}` path segment is dispatched to the
-per-provider apps (`aux4/oauth-app-google`, `aux4/oauth-app-x`, installed as
-dependencies). Set `GOOGLE_*` and/or `X_*` env vars for the providers you use.
+Core host for deployable OAuth provider plugins. Provides the shared api/oauth
+machinery, the `oauth-app` profile that plugins extend, and `GET /health`.
+Install a provider plugin (aux4/oauth-app-google, aux4/oauth-app-x) on top — each
+depends on this core, registers its provider under the `oauth-app` profile, and
+brings its own routes. A machine can host several plugins at once.

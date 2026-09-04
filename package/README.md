@@ -1,65 +1,36 @@
 # aux4/oauth-app
 
-Deploy **one** OAuth service that handles **multiple providers** (Google + X) in one click. It holds your OAuth client credentials server-side and does the authorization-URL build, the code exchange, and the token refresh on behalf of your CLI tools — so those tools **never handle a client secret**, and everything runs under **your** apps, on **one** VM.
+The **core host** for deployable OAuth provider apps. It provides the shared `aux4/api` + `aux4/oauth` machinery, a `health` endpoint, and the `oauth-app` profile that provider **plugins** extend. On its own it hosts nothing useful — you install one or more provider plugins on top:
 
-It composes the per-provider apps [`aux4/oauth-app-google`](https://hub.aux4.io/r/public/packages/aux4/oauth-app-google) and [`aux4/oauth-app-x`](https://hub.aux4.io/r/public/packages/aux4/oauth-app-x) (installed as dependencies): the `{provider}` path segment is dispatched to the matching app. Deployed as an `api`-type machine on [aux4.cloud](https://aux4.cloud). The package itself contains **no secrets**.
+- [`aux4/oauth-app-google`](https://hub.aux4.io/r/public/packages/aux4/oauth-app-google) — Google
+- [`aux4/oauth-app-x`](https://hub.aux4.io/r/public/packages/aux4/oauth-app-x) — X (Twitter)
 
-## Quick start
-
-1. **Deploy it.** From the [hub package page](https://hub.aux4.io/r/public/packages/aux4/oauth-app), click **Deploy to cloud** (or `aux4 aux4 cloud deploy oauth-app --package aux4/oauth-app --api true`). You get a URL like `https://<your-scope>.on.aux4.cloud/oauth-app`.
-
-2. **Add whichever provider credentials you have** (encrypted at rest, applied immediately):
-
-   ```bash
-   aux4 aux4 cloud oauth-app env set \
-     GOOGLE_CLIENT_ID=... GOOGLE_CLIENT_SECRET=... \
-     X_CLIENT_ID=... X_CLIENT_SECRET=...
-   ```
-
-   Set only the ones you use — a provider with no credentials simply returns an error until configured.
-
-3. **Point your CLI at it**, per provider:
-
-   ```
-   https://<your-scope>.on.aux4.cloud/oauth-app/api/google/authorize-url?redirectUri=...
-   https://<your-scope>.on.aux4.cloud/oauth-app/api/x/authorize-url?redirectUri=...
-   ```
+Each plugin **depends on this core**, adds its provider under the `oauth-app` profile (`aux4 oauth-app <provider> …`), and brings **its own routes** (its own URI shape) plus credential handling. Deployed as an `api`-type machine on [aux4.cloud](https://aux4.cloud); a machine can host several plugins at once (their routes are merged).
 
 ## Installation
 
-You do not normally install this package locally — you deploy it. To inspect or run it locally:
+You deploy plugins, not this package directly. To inspect locally:
 
 ```bash
 aux4 aux4 pkger install aux4/oauth-app
 ```
 
-## Endpoints
+## How it works
 
-Served under the `/api` prefix. `{provider}` is `google` or `x`.
+- The core owns the `oauth-app` profile and the `GET /health` route, and pulls in `aux4/api`, `aux4/oauth`, `aux4/config`.
+- A provider plugin (e.g. `aux4/oauth-app-google`) depends on the core, registers its provider command (`aux4 oauth-app google …`), and declares its routes in its own `config.yaml` (`/google/authorize-url`, `/google/exchange`, `/google/refresh`).
+- Deploy one or more plugins to a machine; each plugin's routes are added to the shared host, and every provider's credentials are set as machine environment variables.
 
-| Route | Purpose |
-|-------|---------|
-| `GET /health` | Liveness check → `{"status":"ok"}` |
-| `GET /{provider}/authorize-url` | Build the provider authorization URL (returns `url`, `codeVerifier`, `state`) |
-| `POST /{provider}/exchange` | Exchange an authorization `code` for tokens |
-| `POST /{provider}/refresh` | Renew an access token from a `refreshToken` |
+## Deploying
 
-Each route is dispatched to the matching per-provider app, which owns the provider's endpoints, scopes, and credential handling. See [`aux4/oauth-app-google`](https://hub.aux4.io/r/public/packages/aux4/oauth-app-google) and [`aux4/oauth-app-x`](https://hub.aux4.io/r/public/packages/aux4/oauth-app-x) for the per-provider request/response details and configuration (`GOOGLE_*` / `X_*` env vars, `GOOGLE_SCOPES` / `X_SCOPES`).
+```bash
+# one provider
+aux4 aux4 cloud deploy oauth --package aux4/oauth-app-google --api true \
+  --env GOOGLE_CLIENT_ID=... --env GOOGLE_CLIENT_SECRET=...
 
-## Configuration
-
-| Environment variable | Provider | Description |
-|----------------------|----------|-------------|
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google | Google OAuth client credentials |
-| `GOOGLE_SCOPES` | Google | Default Google scopes (optional) |
-| `X_CLIENT_ID` / `X_CLIENT_SECRET` | X | X OAuth client credentials (`X_CLIENT_SECRET` only for a confidential Web App client) |
-| `X_SCOPES` | X | Default X scopes (optional) |
-
-## When to use this vs the per-provider apps
-
-- **`aux4/oauth-app`** (this package) — one machine for several providers; lower cost, one place for all creds.
-- **`aux4/oauth-app-google`** / **`aux4/oauth-app-x`** — a focused single-provider deploy.
-
-## Security
-
-The endpoints are **unauthenticated** (by design for the loopback CLI login model). Treat the URL as semi-sensitive, register only the callback URIs your clients use, and keep scopes minimal. A scope allowlist is a planned addition.
+# several providers on one machine
+aux4 aux4 cloud deploy oauth \
+  --package aux4/oauth-app-google --package aux4/oauth-app-x --api true \
+  --env GOOGLE_CLIENT_ID=... --env GOOGLE_CLIENT_SECRET=... \
+  --env X_CLIENT_ID=... --env X_CLIENT_SECRET=...
+```
