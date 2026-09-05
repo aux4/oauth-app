@@ -12,7 +12,7 @@
   ],
   "dependencies": [
     "aux4/api",
-    "aux4/oauth@0.1.5",
+    "aux4/oauth@0.1.7",
     "aux4/config"
   ],
   "system": [
