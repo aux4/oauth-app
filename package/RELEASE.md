@@ -1,22 +1,16 @@
-# aux4/oauth-app 0.0.7
+# aux4/oauth-app 0.0.8
 
-## Added
+## Changed
 
-- **Secure-by-default endpoint auth.** Every route that is not explicitly
-  `public: true` now requires a valid aux4 idToken (`Authorization: Bearer`)
-  whose owner is entitled to this machine's scope, verified by the new
-  `aux4 oauth-app auth-validate` command against the aux4 SSO `/userinfo`
-  endpoint. `/health` and the shared `/session/{id}` poll's sibling public
-  routes behave as before.
-- **`disableWhenEnv: OAUTH_APP_PUBLIC`** on `security.auth` — the deploy-time
-  kill switch. When the machine env sets `OAUTH_APP_PUBLIC=true`, `aux4/api`
-  turns auth off wholesale and the broker serves everyone. This is the primary
-  public/secure toggle; `auth-validate` also recognises the same env as a
-  defensive fallback for older `aux4/api` versions.
+- **Friendly OAuth landing page.** After a user approves, declines, or fails an
+  access request in the browser, the redirect now shows a clean, self-contained
+  HTML page instead of raw JSON. It is white-label (names no product or vendor),
+  written in plain language, theme-aware (light/dark), mobile-first and
+  accessible, with three states:
+  - **success** — "You're all set. You can close this page and go back to where you started."
+  - **declined** (the user chose not to grant access) — a neutral, no-fault
+    "No problem" page rather than an error.
+  - **failure / expired link** — a calm "Something went wrong" page with guidance
+    to try again.
 
-## Notes
-
-- One VM = one policy. A broker that needs a different auth policy is a
-  different VM. Requires `aux4/api` with `disableWhenEnv` support for the
-  wholesale toggle (the fallback keeps older api versions public rather than
-  failing closed).
+  The code-parking step's output no longer leaks into the browser response.

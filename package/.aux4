@@ -121,12 +121,17 @@
         {
           "name": "callback",
           "execute": [
-            "set:sessionId=${query.state}",
-            "set:code=${query.code}",
-            "set:error=${query.error}",
-            "if(sessionId==) && echo 'Missing state parameter' 1>&2 && exit 1 || if(sessionId!=) && true",
-            "aux4 oauth session park --id value(sessionId) param(code) param(error) --dir ${stateDir}/oauth-sessions",
-            "echo 'Authorization complete. You can close this window and return to your terminal.'"
+            "set:sessionId=nvl(query.state, '')",
+            "set:code=nvl(query.code, '')",
+            "set:error=nvl(query.error, '')",
+            "# Malformed link (no state): render a friendly page and stop. The later steps are guarded to sessionId!=, so they no-op after this. (nvl() gives a clean empty string when a query field is absent, so these checks are reliable.)",
+            "if(sessionId==) && node ${packageDir}/lib/callback-page.mjs 'This link has expired. Please go back to where you started and try signing in again.' || if(sessionId!=) && true",
+            "# Park the returned code (or error) for the polling client. nout: keeps the park's JSON out of the browser response — the HTML page below is the only body served.",
+            "when:${sessionId}!=:nout:aux4 oauth session park --id value(sessionId) param(code) param(error) --dir ${stateDir}/oauth-sessions",
+            "# Render the landing page. Three outcomes: success (no error); the user chose not to grant access (access_denied → a neutral, no-fault page); or a real failure.",
+            "when:${sessionId}!= && ${error}==:node ${packageDir}/lib/callback-page.mjs",
+            "when:${sessionId}!= && ${error}==access_denied:node ${packageDir}/lib/callback-page.mjs --declined",
+            "when:${sessionId}!= && ${error}!= && ${error}!=access_denied:node ${packageDir}/lib/callback-page.mjs 'We could not finish. Please close this page and try again.'"
           ],
           "help": {
             "text": "OAuth redirect landing point (shared by every provider). Parks the returned code for the polling CLI, keyed by the session state. Register <machine-url>/api/callback as the redirect URI on each provider app.",
