@@ -126,12 +126,14 @@
             "set:error=nvl(query.error, '')",
             "# Malformed link (no state): render a friendly page and stop. The later steps are guarded to sessionId!=, so they no-op after this. (nvl() gives a clean empty string when a query field is absent, so these checks are reliable.)",
             "if(sessionId==) && node ${packageDir}/lib/callback-page.mjs 'This link has expired. Please go back to where you started and try signing in again.' || if(sessionId!=) && true",
-            "# Park the returned code (or error) for the polling client. nout: keeps the park's JSON out of the browser response — the HTML page below is the only body served.",
-            "when:${sessionId}!=:nout:aux4 oauth session park --id value(sessionId) param(code) param(error) --dir ${stateDir}/oauth-sessions",
-            "# Render the landing page. Three outcomes: success (no error); the user chose not to grant access (access_denied → a neutral, no-fault page); or a real failure.",
-            "when:${sessionId}!= && ${error}==:node ${packageDir}/lib/callback-page.mjs",
-            "when:${sessionId}!= && ${error}==access_denied:node ${packageDir}/lib/callback-page.mjs --declined",
-            "when:${sessionId}!= && ${error}!= && ${error}!=access_denied:node ${packageDir}/lib/callback-page.mjs 'We could not finish. Please close this page and try again.'"
+            "# Park the returned code (or error) for the polling client, tolerant of failure. The park runs in a subshell whose stdout/stderr are discarded — its JSON never reaches the browser (the HTML page below is the only body served) — and which always exits 0, so parkStatus captures 'ok' or 'failed' without halting the chain. NOT set:! on park directly: a non-zero park would halt before any page rendered, and the api would emit a raw JSON 500 to the browser (the AUTH-041 bug). parkStatus is seeded to 'ok' first so it always has a defined value (the park step is skipped for a malformed, stateless link).",
+            "set:parkStatus=ok",
+            "when:${sessionId}!=:set:parkStatus=!(aux4 oauth session park --id value(sessionId) param(code) param(error) --dir ${stateDir}/oauth-sessions >/dev/null 2>&1 && echo ok || echo failed)",
+            "# Render the landing page — always a page, always exit 0. If parking failed, show the friendly error page. Otherwise: success (no error); the user chose not to grant access (access_denied → a neutral, no-fault page); or a real provider error.",
+            "when:${sessionId}!= && ${parkStatus}==failed:node ${packageDir}/lib/callback-page.mjs 'We could not finish. Please close this page and try again.'",
+            "when:${sessionId}!= && ${parkStatus}!=failed && ${error}==:node ${packageDir}/lib/callback-page.mjs",
+            "when:${sessionId}!= && ${parkStatus}!=failed && ${error}==access_denied:node ${packageDir}/lib/callback-page.mjs --declined",
+            "when:${sessionId}!= && ${parkStatus}!=failed && ${error}!= && ${error}!=access_denied:node ${packageDir}/lib/callback-page.mjs 'We could not finish. Please close this page and try again.'"
           ],
           "help": {
             "text": "OAuth redirect landing point (shared by every provider). Parks the returned code for the polling CLI, keyed by the session state. Register <machine-url>/api/callback as the redirect URI on each provider app.",

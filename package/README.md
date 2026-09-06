@@ -35,6 +35,23 @@ aux4 aux4 cloud deploy oauth \
   --env X_CLIENT_ID=... --env X_CLIENT_SECRET=...
 ```
 
+## Callback landing page
+
+Every provider's browser redirect lands on the shared `GET /callback` route
+(`aux4 oauth-app callback`). It parks the returned authorization code (or error) for
+the polling CLI, keyed by the session `state`, and renders a friendly, white-label
+HTML page for the human. The page is the only body served — the parking step's own
+output is discarded — and the response is always `200`.
+
+The page has five states: an expired-link page (a malformed link with no `state`),
+the success page, a neutral "declined" page (`access_denied`), and a friendly error
+page for any other provider error.
+
+**Parking never breaks the page.** If parking the code fails (for example the session
+store is not writable), the callback still renders the friendly error page and exits
+`0` — the browser never sees the api's generic JSON 500. Register
+`<machine-url>/api/callback` as the redirect URI on each provider app.
+
 ## Endpoint authentication
 
 The broker restricts its CLI-facing endpoints to authenticated aux4 users of the
