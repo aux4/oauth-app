@@ -1,7 +1,7 @@
 {
   "scope": "aux4",
   "name": "oauth-app",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "Core host for deployable OAuth provider plugins (aux4/oauth-app-google, aux4/oauth-app-x). Provides the shared api/oauth machinery and health; each plugin brings its own routes and provider logic.",
   "license": "MIT",
   "tags": [
